@@ -1,0 +1,3 @@
+outputs/
+*.fits
+__pycache__/
