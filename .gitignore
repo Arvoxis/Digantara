@@ -1,3 +1,4 @@
 outputs/
 *.fits
 __pycache__/
+RESPONSE.html

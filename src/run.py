@@ -61,9 +61,9 @@ def main():
             write_images=not args.no_tile_images,
         )
         qa.write_qa(frame, display, labels, dets, psf, out / "qa")
-        cv2.imwrite(str(out / "qa" / f"{frame.name}_display_full.png"), display)
 
         n_blob = sum(d.cls == BLOB for d in dets)
+        n_marginal = sum(d.cls == STREAK and d.marginal for d in dets)
         n_streak = sum(d.cls == STREAK for d in dets)
         longest = max((d.length for d in dets if d.cls == STREAK), default=0.0)
         rows.append(
@@ -75,6 +75,7 @@ def main():
                 "bg_max": round(frame.bg_range[1], 2),
                 "blobs": n_blob,
                 "streaks": n_streak,
+                "marginal_streaks": n_marginal,
                 "longest_streak_px": round(longest, 1),
                 "tiles": stats["tiles"],
                 "polygons": stats["polygons"],
@@ -84,7 +85,8 @@ def main():
         )
         print(
             f"[{i}/{len(files)}] {frame.name[:28]:28s} psf={psf:.2f} "
-            f"blobs={n_blob:6d} streaks={n_streak:3d} longest={longest:5.1f} "
+            f"blobs={n_blob:6d} streaks={n_streak:3d} marg={n_marginal:3d} "
+            f"longest={longest:5.1f} "
             f"polys={stats['polygons']:6d} ({rows[-1]['seconds']}s)"
         )
         del frame, labels, display
