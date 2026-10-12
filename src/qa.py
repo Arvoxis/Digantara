@@ -92,5 +92,6 @@ def write_qa(frame, display, labels, dets, psf, out_dir, shrink=6):
 
     sheet = streak_sheet(frame.sub, dets, psf)
     if sheet is not None:
-        cv2.imwrite(str(out_dir / f"{frame.name}_streaks.png"), sheet)
+        cv2.imwrite(str(out_dir / f"{frame.name}_streaks.jpg"), sheet,
+                    [cv2.IMWRITE_JPEG_QUALITY, 92])
     return ov

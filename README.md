@@ -65,7 +65,7 @@ outputs/
   tiles/data.yaml Ultralytics dataset descriptor (0 = blob, 1 = streak)
   repatched/      *_repatched.jpg      full-size annotated frame, rebuilt from tiles
   qa/             *_overlay_small.jpg  downsampled overview
-                  *_streaks.png        contact sheet of every streak in the frame
+                  *_streaks.jpg        contact sheet of every streak in the frame
   summary.csv     per-frame counts and calibration values
 ```
 

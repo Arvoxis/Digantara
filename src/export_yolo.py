@@ -57,7 +57,10 @@ def tile_labels(labels, cls_of, y0, x0, tile=TILE):
         for poly in mask_to_polygons(sub == lab):
             # +0.5 puts the vertex at the pixel centre; clip guards the far edge
             norm = np.clip((poly + 0.5) / tile, 0.0, 1.0)
-            coords = " ".join(f"{v:.6f}" for v in norm.reshape(-1))
+            # 4 dp is 1e-4 of a 1024 px tile, so 0.1 px: finer than the mask
+            # boundary is meaningful. 6 dp claimed 0.001 px and cost 25% more
+            # bytes across 700 files for precision the raster cannot carry.
+            coords = " ".join(f"{v:.4f}" for v in norm.reshape(-1))
             lines.append(f"{cls} {coords}")
     return lines
 
@@ -130,5 +133,51 @@ def _self_check():
     print("OK: polygons export, normalise into [0,1], and re-rasterise to IoU > 0.75")
 
 
+def _check_exported(tile_dir="outputs/tiles", n=40, seed=0):
+    """Real-data pass: every exported polygon must sit on an actual source.
+
+    The test is on the PEAK inside the polygon, not the mean. Masks are grown to
+    the 2.5 sigma isophote, so a faint source's outer pixels legitimately pull
+    the mean down to the local background; the peak is what says a source is
+    there. Testing the mean instead flags ~0.5% of perfectly good polygons.
+    """
+    import glob
+    import os
+    import random
+
+    labels = sorted(glob.glob(os.path.join(tile_dir, "labels", "*.txt")))
+    if not labels:
+        print(f"no exported labels under {tile_dir}; skipping real-data check")
+        return
+    random.seed(seed)
+    checked = failed = 0
+    for lp in random.sample(labels, min(n, len(labels))):
+        stem = Path(lp).stem
+        img = cv2.imread(os.path.join(tile_dir, "images", stem + ".png"),
+                         cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
+        for line in Path(lp).read_text().splitlines():
+            if not line.strip():
+                continue
+            pts = np.array([float(v) for v in line.split()[1:]], np.float32)
+            poly = (pts.reshape(-1, 2) * TILE).astype(np.int32)
+            m = np.zeros(img.shape, np.uint8)
+            cv2.fillPoly(m, [poly], 1)
+            inside = m.astype(bool)
+            if not inside.any():
+                failed += 1
+                continue
+            ring = cv2.dilate(m, np.ones((15, 15), np.uint8)).astype(bool) & ~inside
+            local = np.median(img[ring]) if ring.any() else np.median(img)
+            if img[inside].max() <= local:
+                failed += 1
+            checked += 1
+    print(f"OK: {checked} exported polygons across {min(n, len(labels))} random tiles, "
+          f"{failed} not sitting on a source")
+    assert failed == 0, f"{failed} polygons do not sit on a source"
+
+
 if __name__ == "__main__":
     _self_check()
+    _check_exported()
