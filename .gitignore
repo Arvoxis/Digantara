@@ -2,3 +2,4 @@ outputs/
 *.fits
 __pycache__/
 RESPONSE.html
+.ruff_cache/
