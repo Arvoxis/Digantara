@@ -31,7 +31,7 @@ pixels are 0, 1 or 2 ADU. The **median absolute deviation of the raw image is
 exactly 0** on five of the ten frames, so the textbook `median + k·MAD` threshold
 divides by zero. Noise cannot be estimated on raw pixels here.
 
-**2. The background is not flat.** The frame centre runs **1.88× to 3.03×**
+**2. The background is not flat.** The frame centre runs **1.89× to 3.02×**
 brighter than the corners in all ten frames. A single global threshold would
 over-detect the centre and go blind at the edges.
 
@@ -84,7 +84,12 @@ pulled flush to the far edge and the rest are spread evenly between:
 **70 tiles per frame, every tile exactly 1024 × 1024, every tile fully
 in-bounds, zero padding, minimum coverage 1.** `src/tiling.py` asserts all four
 properties and additionally verifies that `repatch(cut(x)) == x` **bit-exactly**,
-on the real frame shape plus three edge cases.
+on the real frame shape plus three edge cases. The claim is then checked on the
+real data rather than only on synthetic arrays: `src/repatch.py --verify`
+reassembles each frame from its 70 exported tile files and asserts the result is
+pixel-identical to the frame rendered straight from the FITS. **All ten frames
+pass**, which is what makes the submitted full-size imagery literally repatched
+rather than merely re-rendered.
 
 The more important decision is **ordering: detection runs once on the whole
 frame, and the finished masks are then cut into tiles.** The frame is only
@@ -167,10 +172,14 @@ the noise is Poisson and not Gaussian:
 
 | threshold | real detections (+) | **false alarms (−)** |
 |---|---|---|
-| 3 σ | 11 818 – 88 604 | **622 – 8 794** |
-| 4 σ | 4 641 – 41 603 | **0 – 79** |
-| **5 σ** | 3 501 – 22 211 | **0 in all 10 frames** |
-| 6 σ | 2 822 – 13 268 | 0 |
+| 3 σ | 11 317 – 90 796 | **268 – 2 453** |
+| 4 σ | 4 522 – 43 467 | **0 – 10** |
+| **5 σ** | 3 404 – 23 602 | **0 in all 10 frames** |
+| 6 σ | 2 793 – 14 360 | 0 in all 10 frames |
+| 8 σ | 2 043 – 9 498 | 0 in all 10 frames |
+
+Reproduce with `python src/calibrate.py`; it asserts the zero and exits
+non-zero if any frame ever shows a false alarm at the operating point.
 
 **The criterion is therefore: the faintest object annotated as a star is the
 faintest one at which the measured whole-frame false-alarm count is zero** — a

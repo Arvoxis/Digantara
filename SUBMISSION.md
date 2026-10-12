@@ -40,25 +40,30 @@ Two renditions, both generated from the same pre-processed frame:
 
 - `outputs/tiles/images/` — the 700 tiles themselves, lossless PNG. This plus
   `labels/` is a directly loadable Ultralytics segmentation dataset.
-- `outputs/qa/*_overlay_full.jpg` — the **repatched full-size** 9568 × 6380 frame
-  with annotations drawn on, for visual inspection.
+- `outputs/repatched/*_repatched.jpg` — the **repatched full-size** 9568 × 6380
+  frames with annotations drawn on, for visual inspection. These are rebuilt
+  *from the exported tiles and label files*, not from memory, and each one was
+  verified bit-identical to the frame rendered straight from its FITS.
 
 Both are regenerated from the FITS by one command (about 6 minutes for all ten
 frames), so if either is absent from the archive you received, run:
 
 ```bash
 pip install -r requirements.txt
-python src/run.py --src <folder with the 10 .fits files> --out outputs
+python src/run.py     --src <folder with the 10 .fits files> --out outputs
+python src/repatch.py --tiles outputs/tiles --out outputs/repatched
 ```
 
 ## Reproducing and verifying
 
-Three modules self-check and exit non-zero on failure:
+Each of these asserts its own result and exits non-zero on failure:
 
 ```bash
 python src/tiling.py       # tiling is in-bounds, gapless, bit-exact round-trip
 python src/export_yolo.py  # polygons normalise to [0,1], re-rasterise to IoU > 0.75
+python src/calibrate.py    # false-alarm sweep; asserts zero at the operating point
 python src/segment.py      # per-frame detection summary across the dataset
+python src/repatch.py --verify <fits folder>   # tiles rebuild the frame exactly
 python make_pdf.py         # rebuilds RESPONSE.pdf from RESPONSE.md
 ```
 
@@ -69,5 +74,5 @@ The full output is about 880 MB, almost all of it imagery: the frames are
 (a single full-size annotated frame is ~43 MB).
 
 If this archive was sent without `outputs/tiles/images/` and
-`outputs/qa/*_overlay_full.jpg`, that was to keep it mailable — everything
+`outputs/repatched/`, that was to keep it mailable — everything
 needed to regenerate them byte-for-byte is included, via the command above.

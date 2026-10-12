@@ -40,10 +40,14 @@ at a time, so that is the whole requirement.
 ## How to run it
 
 ```bash
-python src/run.py --src ../Datasets_Assessment --out outputs
+python src/run.py     --src ../Datasets_Assessment --out outputs
+python src/repatch.py --tiles outputs/tiles --out outputs/repatched                       --verify ../Datasets_Assessment
 ```
 
-Takes roughly 35 s per frame, about 6 minutes for all ten.
+The first command segments, tiles and labels (about 35 s per frame, ~6 minutes
+for all ten). The second rebuilds the full-size annotated frames **from the
+exported tiles and label files**, and with `--verify` asserts the result is
+bit-identical to the frame rendered straight from the FITS.
 
 | flag | effect |
 |---|---|
@@ -59,8 +63,8 @@ outputs/
   tiles/images/   700 PNG tiles, 1024 x 1024, pre-processed
   tiles/labels/   700 YOLO-seg .txt files, one per tile
   tiles/data.yaml Ultralytics dataset descriptor (0 = blob, 1 = streak)
-  qa/             *_overlay_full.jpg   full-frame annotated inspection render
-                  *_overlay_small.png  downsampled overview
+  repatched/      *_repatched.jpg      full-size annotated frame, rebuilt from tiles
+  qa/             *_overlay_small.png  downsampled overview
                   *_streaks.png        contact sheet of every streak in the frame
   summary.csv     per-frame counts and calibration values
 ```
@@ -82,8 +86,15 @@ Three modules carry runnable self-checks. Each exits non-zero on failure:
 ```bash
 python src/tiling.py       # grid is in-bounds, gapless, bit-exact round-trip
 python src/export_yolo.py  # polygons normalise to [0,1] and re-rasterise to IoU > 0.75
+python src/calibrate.py    # false-alarm sweep; asserts zero at the operating point
 python src/segment.py      # per-frame detection summary over the dataset
+python src/repatch.py --verify ../Datasets_Assessment   # tiles rebuild the frame exactly
 ```
+
+The first three assert and exit non-zero on failure, so they work as a test
+suite. `calibrate.py` is what sets the detection threshold, and `repatch.py
+--verify` proves the tiling loses nothing on the real data rather than only on
+the synthetic case.
 
 ## How it works
 
@@ -96,6 +107,8 @@ Five stages, one module each:
 | [`segment.py`](src/segment.py) | detect, deblend, classify blob vs streak |
 | [`export_yolo.py`](src/export_yolo.py) | masks to normalised polygons, per tile |
 | [`qa.py`](src/qa.py) | overlays and streak contact sheets |
+| [`calibrate.py`](src/calibrate.py) | false-alarm measurement that sets the detection threshold |
+| [`repatch.py`](src/repatch.py) | rebuilds full-size frames from the exported tiles |
 
 Detection runs **once on the whole frame**, and the finished masks are then cut
 into tiles. That ordering is what makes tile boundaries a non-issue: an object

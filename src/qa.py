@@ -77,13 +77,10 @@ def write_qa(frame, display, labels, dets, psf, out_dir, shrink=6):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # The full-size annotated render is produced by repatch.py instead, which
+    # rebuilds it from the exported tiles and labels rather than from memory, so
+    # the deliverable is demonstrably the artefact that was shipped.
     ov = overlay(display, labels, dets)
-    # JPEG for the full-size inspection render: it is for human eyes, and PNG on
-    # incompressible noise costs ~40 MB a frame against ~5 MB here. The tiles
-    # that form the actual dataset stay lossless PNG, and the labels are vector
-    # polygons, so nothing downstream sees the lossy copy.
-    cv2.imwrite(str(out_dir / f"{frame.name}_overlay_full.jpg"), ov,
-                [cv2.IMWRITE_JPEG_QUALITY, 92])
     small = cv2.resize(
         ov, (ov.shape[1] // shrink, ov.shape[0] // shrink), interpolation=cv2.INTER_AREA
     )
