@@ -84,7 +84,11 @@ def write_qa(frame, display, labels, dets, psf, out_dir, shrink=6):
     small = cv2.resize(
         ov, (ov.shape[1] // shrink, ov.shape[0] // shrink), interpolation=cv2.INTER_AREA
     )
-    cv2.imwrite(str(out_dir / f"{frame.name}_overlay_small.png"), small)
+    # JPEG: at this size the annotation lines are visually identical to PNG
+    # (checked side by side) while the set drops from 32.5 MB to 5.5 MB, which
+    # is the difference between fitting in a submission upload and not.
+    cv2.imwrite(str(out_dir / f"{frame.name}_overlay_small.jpg"), small,
+                [cv2.IMWRITE_JPEG_QUALITY, 92])
 
     sheet = streak_sheet(frame.sub, dets, psf)
     if sheet is not None:

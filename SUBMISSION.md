@@ -10,7 +10,7 @@
 | `RESPONSE.pdf` | the written response — answers Q2 (a)–(d) with the measurements behind each decision |
 | `README.md` | what the pipeline is, how to run it, how to verify it |
 | `outputs/summary.csv` | per-frame results: PSF, noise scale, background range, blob/streak/marginal counts |
-| `outputs/qa/*_overlay_small.png` | quickest way to see the annotations — one downsampled view per frame |
+| `outputs/qa/*_overlay_small.jpg` | quickest way to see the annotations — one downsampled view per frame |
 | `outputs/qa/*_streaks.png` | contact sheet of **every** streak in a frame, for individual inspection |
 
 ## The annotations
